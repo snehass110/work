@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODO App</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    #app {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    input[type="text"], textarea {
+      width: calc(100% - 80px);
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background-color: #fff;
+      width: calc(100% - 100px);
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #dc3545; 
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #c82333; 
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 5px;
+    }
+    li button {
+      padding: 5px 10px;
+      border: none;
+      background-color: #dc3545;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .task-details {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <h1>TODO App</h1>
+  <input type="text" v-model="newTask.name" placeholder="Task Name...">
+  <select v-model="newTask.priority">
+    <option value="">Priority</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+  <input type="date" v-model="newTask.dueDate" placeholder="Due Date">
+  <textarea v-model="newTask.description" placeholder="Description"></textarea>
+  <button @click="addTask">Add Task</button>
+  <div v-if="tasks.length > 0">
+    <label>Sort by:</label>
+    <select v-model="sortBy">
+      <option value="name">Name</option>
+      <option value="priority">Priority</option>
+      <option value="dueDate">Due Date</option>
+    </select>
+    <label>Search:</label>
+    <input type="text" v-model="searchQuery" placeholder="Search tasks...">
+    <label>Status:</label>
+    <select v-model="statusFilter">
+      <option value="">All</option>
+      <option value="true">Completed</option>
+      <option value="false">Pending</option>
+    </select>
+  </div>
+  <ul>
+    <li v-for="(task, index) in filteredTasks" :key="index">
+      <div>
+        <input type="checkbox" v-model="task.completed"> {{ task.name }} (Priority: {{ task.priority }}) (Due: {{ task.dueDate }}) - {{ task.completed ? 'Completed' : 'Pending' }}
+      </div>
+      <div>
+        <button class="edit" @click="editTask(index)">Edit</button>
+        <button @click="deleteTask(index)">Delete</button>
+        <button @click="showTaskDetails(task)">Details</button>
+      </div>
+    </li>
+  </ul>
+  <div v-if="selectedTask">
+    <div class="task-details">
+      <h2>{{ selectedTask.name }}</h2>
+      <p><strong>Priority:</strong> {{ selectedTask.priority }}</p>
+      <p><strong>Due Date:</strong> {{ selectedTask.dueDate }}</p>
+      <p><strong>Description:</strong> {{ selectedTask.description }}</p>
+      <p><strong>Status:</strong> {{ selectedTask.completed ? 'Completed' : 'Pending' }}</p>
+      <button @click="closeTaskDetails">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+new Vue({
+  el: '#app',
+  data: {
+    newTask: { name: '', completed: false, priority: '', dueDate: '', description: '' },
+    tasks: [],
+    sortBy: 'name',
+    searchQuery: '',
+    statusFilter: '',
+    selectedTask: null
+  },
+  computed: {
+    filteredTasks() {
+      return this.tasks.filter(task => {
+        return task.name.toLowerCase().includes(this.searchQuery.toLowerCase()) &&
+               (this.statusFilter === '' || String(task.completed) === this.statusFilter);
+      }).sort((a, b) => {
+        if (this.sortBy === 'name') {
+          return a.name.localeCompare(b.name);
+        } else if (this.sortBy === 'priority') {
+          return a.priority.localeCompare(b.priority);
+        } else if (this.sortBy === 'dueDate') {
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        }
+      });
+    }
+  },
+  methods: {
+    addTask() {
+      if (this.newTask.name.trim() !== '') {
+        this.tasks.push({...this.newTask});
+        this.newTask.name = '';
+        this.newTask.priority = '';
+        this.newTask.dueDate = '';
+        this.newTask.description = '';
+      }
+    },
+    editTask(index) {
+      let updatedTask = prompt('Edit task:', this.tasks[index].name);
+      if (updatedTask !== null) {
+        updatedTask = updatedTask.trim();
+        if (updatedTask !== '') {
+          this.tasks[index].name = updatedTask;
+        }
+      }
+    },
+    deleteTask(index) {
+      if (confirm('Are you sure you want to delete this task?')) {
+        this.tasks.splice(index, 1);
+      }
+    },
+    showTaskDetails(task) {
+      this.selectedTask = task;
+    },
+    closeTaskDetails() {
+      this.selectedTask = null;
+    }
+  }
+});
+</script>
+
+</body>
+</html>
